@@ -17,7 +17,7 @@ The methodology behind this software is based on logistic fitting of qPCR amplif
 
 Here *A* is the asymptotic amplitude of the amplification, *n* is a steepness factor, and *c50* is the cycle (*c*) at which 50% amplification has occurred.  Here is a graphical representation of this curve:
 
-<img src="file://pics/amp_curve.png" width=500>
+<img src="pics/amp_curve.png" width=500>
 
 A typical CDC workflow involves setting a threshold well above the baseline but in the rapidly rising portion of the curve.  Since our fit accurately determines the curve baseline, we can define this point mathematically.  One limitation of this approach is knowing where to set that value on the y axis.  The best option is to have a positive control with the target RNA corresponding to the well of interest.  The threshold value can then be set as 5% of the amplitude of that target well.  Once the threshold is set, the Ct value is defined for each well as follows:
 
@@ -32,7 +32,7 @@ Reference:
 
 In order to understand the characteristics of real experimental samples, we fit 1014 samples to logistic functions.  These samples were a combination of pseudovirus dilution samples, no template control samples (e.g. water), and Rpe1 negative control samples.  All curves were visually inspected and labeled positive or negative.  548 of the curves were negative and 466 were positive.  We observed that the baseline (b) parameter correlated little if at all with the positive or negative status of a sample.  Therefore, we focused on the amplitude, steepness, and Ct values.
 
-<img src="file://pics/parameter_plot.png" width=500>
+<img src="pics/parameter_plot.png" width=500>
 
 Here the blue curves are the negative values and the red are positive.  If we limit the Ct value to between 15 and 45, the amplitude to between 0.1 and 10, and the n value to between 0.2 and 0.8, we can efficiently separate the positives from the negatives.  For this data, those limits give us 100% correct negative assignment and 98.3% correct positive assignment.  The curves that are incorrectly deemed negative are those with very low concentration of pseudovirus.
 
@@ -54,7 +54,7 @@ Note that for 96 well data the organization is similar but there are up to 4 eds
 
 Here is a picture of our folder organization:
 
-<img src="file://pics/file_org.png" width=500>
+<img src="pics/file_org.png" width=500>
 
 *Run Walk-through:*
 
@@ -62,13 +62,13 @@ Upon setting up the data analysis folders, you will want to run a jupyter notebo
 
 Once you have a command prompt in your data analysis folder, type “conda activate” (this is unnecessary if you started with the anaconda prompt).  Your cursor should now start with (base):
 
-<img src="file://pics/conda_cmd.png" width=500>
+<img src="pics/conda_cmd.png" width=500>
 
 Next, type “jupyter notebook” and press enter.  This will take you to a webpage with a browser window showing your current folder.  You can click on a subfolder to navigate.  Navigate to the reports folder in the plate subfolder and click on the analyze_qpcr_plate-384-v2.ipynb file.
 
 Jupyter notebooks has several tools at the top that allow you to control execution:
 
-<img src="file://pics/jupyter_toolbar.png" width=500>
+<img src="pics/jupyter_toolbar.png" width=500>
 
 The >> button simply executes the entire file at one shot.  This will work for most applications.  You can also run one block at a time with the Run button and stop and restart execution with the square and circle arrow buttons.  This file has relatively little interesting output but you’re welcome to peruse it.  Note that you can always peruse it after the fact by opening the html file of the same name that is produced upon running the notebook all the way through.
 
@@ -80,19 +80,19 @@ The next step is to run the “WellPlates-realdata-html-384-carpet-v2.ipynb” f
 
 The first visualization is the plate heatmap.  Wells are colored by their Ct values and white if amplification is not detected.  The text on each well shows the test status for that set of 3 wells.  If you mouse over the wells, a tooltip will show you the sample name, category, and Ct value as well as my Ct value and Category (JCT and JCategory) as described above.  Note that this visualization includes the controls and the samples.
 
-<img src="file://pics/heatmap.png" width=800>
+<img src="pics/heatmap.png" width=800>
 
 The next important visualization is the control report.  The left-hand table shows all control well results while the right hand table summarizes the control status.  If any of the status values do not say “passed” the entire plate analysis must be reassessed.
 
-<img src="file://pics/ctrl_report.png" width=800>
+<img src="pics/ctrl_report.png" width=800>
 
 Next, is an interactive scatter plot of Ct vs. Amplification levels for the three wells corresponding to each sample (here they are named N1, N2, and RPP30 but they may be named differently for your assay).  You can scroll and zoom in on points and hover over them to see details.  There is one set of plots for controls and one for the sample wells.  This plate shows a fairly typical result.  All human RNA (RPP30) values are high, indicating good RNA extraction and all but one viral RNA value is low indicating a single positive sample (in this case a blind control).
 
-<img src="file://pics/scatter_plot.png" width=800>
+<img src="pics/scatter_plot.png" width=800>
 
 It is typical to visually confirm amplification for positive samples.  For plates with few positive samples, this is fairly straightforward within the QuantStudio(TM) software or a plot like above.  It is more difficult to confirm lack of amplification for negative samples.  The presence of “horsetail” amplification makes such assessments even more difficult.  I have settled on a “kymograph” visualization method where each horizontal block represents the amplification profile (in heatmap form) for a well.  Here are all of our negative wells.
 
-<img src="file://pics/kymograph.png" width=800>
+<img src="pics/kymograph.png" width=800>
 
 As you can see all of the human RNA samples (here RPP30) are strongly positive.  I saturate the signal levels to focus on potentially weak amplification.  You can see how G4 on the left and F4 in the middle had horsetail amplification but are clearly negative.
 
