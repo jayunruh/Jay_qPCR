@@ -28,7 +28,7 @@ def getqPCRData(fpath):
     ampdf=pd.read_excel(fpath,'Amplification Data',skiprows=hl-1)
     return header,resdf,ampdf
 
-def getEDSData(fpath):
+def getEDSData(fpath,fmt=384):
     isjson=False
     with ZipFile(fpath,'r') as zipobj:
         flist=zipobj.namelist()
@@ -36,7 +36,7 @@ def getEDSData(fpath):
             isjson=True
             print('file has json data')
     if(isjson):
-        temp=getEDSJSONData(fpath)
+        temp=getEDSJSONData(fpath,fmt=fmt)
     else:
         temp=getEDSData2(fpath)
     return temp
@@ -74,7 +74,7 @@ def getEDSData2(fpath):
                     meta.update(getMeta(root,['Name','Description']))
     return resdf,curvedf,meta
 
-def getEDSJSONData(fpath):
+def getEDSJSONData(fpath,fmt=384):
     """
     parses an EDS file that keeps it's values in zipped JSON files
     """
@@ -87,7 +87,7 @@ def getEDSJSONData(fpath):
             if(fname.endswith('analysis_result.json')):
                 with(zipobj.open(fname)) as fp:
                     resdict=json.load(fp)
-                resdf,curvedf=parseEDSJSONResults(resdict)
+                resdf,curvedf=parseEDSJSONResults(resdict,fmt=fmt)
             if(fname=='summary.json'):
                 with(zipobj.open(fname)) as fp:
                     sumdict=json.load(fp)
@@ -172,7 +172,7 @@ def parseEDSResults(lines):
     curvedf=curvedf.apply(pd.to_numeric,errors='coerce')
     return resdf,curvedf
 
-def parseEDSJSONResults(edsdict):
+def parseEDSJSONResults(edsdict,fmt=384):
     """
     here we read an analysis_result.json file from newer versions of the quantstudio(tm) software
     """
@@ -185,6 +185,8 @@ def parseEDSJSONResults(edsdict):
     status=[]
     curves=[]
     wellnameslist=makeWellNames(16,24,0)
+    if(fmt!=384):
+        wellnameslist=makeWellNames(8,12,0)
     for i in range(len(wellres)):
         welldict=wellres[i]
         wellposval=welldict['wellIndex']

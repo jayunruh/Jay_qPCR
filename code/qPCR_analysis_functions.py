@@ -17,42 +17,6 @@ from bokeh.models import HoverTool
 
 #these are the names of our qPCR targets, two for detection and one human for reference
 targets=['N1','N2','RPP30']
-#     """
-#     here we read an analysis_result.json file from newer versions of the quantstudio(tm) software
-#     """
-#     wellres=edsdict['wellResults']
-#     CT=[]
-#     sname=[]
-#     wellpos=[]
-#     wellname=[]
-#     target=[]
-#     status=[]
-#     curves=[]
-#     wellnameslist=makeWellNames(16,24,0)
-#     for i in range(len(wellres)):
-#         welldict=wellres[i]
-#         wellposval=welldict['wellIndex']
-#         wellpos.append(wellposval)
-#         wellname.append(wellnameslist[wellposval])
-#         sname.append(welldict['sampleName'])
-#         rxntemp=welldict['reactionResults']
-#         target.append(rxntemp[0]['targetName'])
-#         ampdict=rxntemp[0]['amplificationResult']
-#         curves.append(ampdict['deltaRn'])
-#         CT.append(ampdict['cq'])
-#         status.append(ampdict['ampStatus'])
-#     #now convert into dataframes
-#     resdf=pd.DataFrame({'Well':wellpos,'Well Position':wellname,'Sample':sname,'Cq':CT,'Target':target,'Amp Status':status})
-#     if('Amp Status' in resdf.columns.tolist()):
-#         resdf.loc[resdf['Amp Status']=='NO_AMP','Cq']=float('nan')
-#     resdf.loc[resdf['Cq']==-1,'Cq']=float('nan')
-#     curves=np.array(curves)
-#     #curves=curves.T
-#     curvedf=pd.DataFrame(columns=wellname)
-#     for i in range(curves.shape[0]):
-#         #curvedf[curvelabels[i]]=curvearr[i,:]
-#         curvedf[wellname[i]]=curves[i,:]
-#     return resdf,curvedf
 
 def selectWellNames(wells,direction,maxwells):
     """
@@ -152,7 +116,7 @@ def transformResDF(resdf):
 def pivotAmpDF(ampdf):
     return ampdf.pivot(index='Cycle Number',columns='Well Position',values='dRn')
     
-def makeHeatMap(resdf,ctcol,vmin=25,vmax=55):
+def makeHeatMap(resdf,ctcol,labcol=None,vmin=25,vmax=55):
     """
     this makes a heatmap out of the ct values in the results dataframe
     row and column values must be in 'row' and 'col' columns
@@ -163,6 +127,12 @@ def makeHeatMap(resdf,ctcol,vmin=25,vmax=55):
     maxrow=max(resdf.row)
     ctvals=np.zeros((maxrow-minrow+1,maxcol-mincol+1))
     ctvals[resdf.row-1,resdf.col-1]=resdf[ctcol]
+    #labvals=np.empty((maxrow-minrow+1,maxcol-mincol+1),dtype=str)
+    labvals={}
+    if(labcol is not None):
+        labvals={(resdf.row[i]-1,resdf.col[i]-1):resdf[labcol][i] for i in range(len(resdf))}
+        #labvals[resdf.row-1,resdf.col-1]=resdf[labcol]
+        #print(labvals[:,0])
     #print(ctvals.shape)
     rowlabels=[chr(i+64) for i in range(minrow,maxrow+1)]
     #print(rowlabels)
@@ -175,6 +145,11 @@ def makeHeatMap(resdf,ctcol,vmin=25,vmax=55):
     ax.set_yticklabels(rowlabels)
     ax.set_xticks(np.arange(len(collabels)))
     ax.set_xticklabels(collabels)
+    if(labcol is not None):
+        for i in range(len(collabels)):
+            for j in range(len(rowlabels)):
+                if((j,i) in labvals):
+                    ax.text(i,j,labvals[(j,i)],ha="center", va="center", color="r")
     fig.colorbar(mappable)
     plt.show()
     
@@ -192,6 +167,40 @@ def makeHoverHeatMap(df,labelcol,hovercols,vmin=25,vmax=45):
     hover=HoverTool(tooltips=tooltips)
     heatmap.opts(tools=[hover], colorbar=True, invert_yaxis=True, width=1500, height=800, clim=(vmin,vmax),xlim=(0.5,24.5))
     return heatmap*hv.Labels(heatmap, vdims=[labelcol]) 
+
+def makeTripleCarpet(carpets,colllabels,rowlabels,maxval,extralabels):
+    """
+    makes a 3 carpet heatmap
+    """
+    if(len(rowlabels)<1):
+        print('no wells to show')
+        return
+    sprowlabels=[rowlabels[i]+','+extralabels[i] for i in range(len(rowlabels))]
+    rlab2=[getTriple(rowlabels[i])[1] for i in range(len(rowlabels))]
+    rlab3=[getTriple(rowlabels[i])[2] for i in range(len(rowlabels))]
+    fig=plt.figure(figsize=(16,16))
+    #fig,ax=plt.subplots(1,3,sharey=True,figsize=(16,8))
+    #mask=np.isnan(ctvals)
+    ax=plt.subplot(1,3,1,title=targets[0]+' dRn')
+    ax.imshow(carpets[0],vmin=0,vmax=maxval,aspect='auto')
+    ax.set_yticks(np.arange(len(sprowlabels)))
+    ax.set_yticklabels(sprowlabels)
+    ax.set_xticks(np.arange(len(colllabels)))
+    ax.set_xticklabels(colllabels)
+    ax=plt.subplot(1,3,2,title=targets[1]+' dRn')
+    ax.imshow(carpets[1],vmin=0,vmax=maxval,aspect='auto')
+    ax.set_yticks(np.arange(len(rowlabels)))
+    ax.set_yticklabels(rlab2)
+    ax.set_xticks(np.arange(len(colllabels)))
+    ax.set_xticklabels(colllabels)
+    ax=plt.subplot(1,3,3,title=targets[2]+' dRn')
+    mappable=ax.imshow(carpets[2],vmin=0,vmax=maxval,aspect='auto')
+    ax.set_yticks(np.arange(len(rowlabels)))
+    ax.set_yticklabels(rlab3)
+    ax.set_xticks(np.arange(len(colllabels)))
+    ax.set_xticklabels(colllabels)
+    fig.colorbar(mappable)
+    return fig
 
 def makeHoverCarpet(carpets,collabels,rowlabels,maxval,extralabels):
     """
@@ -294,7 +303,7 @@ def getTriplePlot(wellname1,uampdf,ymax,logscale=False):
     ax.legend()
     plt.show()
     
-def getCatCarpet(combineddf,tracesdf,catcolumn,cat,extracolumn):
+def getCatCarpet(combineddf,tracesdf,catcolumn,cat,extracolumns):
     """
     here we make carpets out of all of the triples in a category
     """
@@ -318,7 +327,7 @@ def getCatCarpet(combineddf,tracesdf,catcolumn,cat,extracolumn):
                 tabindex=wellnamelist.index(wellname)
                 if(combineddf[catcolumn][tabindex]==cat):
                     catwelllist.append(wellname)
-                    extralist.append(combineddf[extracolumn][tabindex])
+                    extralist.append(combineddf.loc[tabindex,extracolumns])
                     curve=tracesdf[wellname].values
                     curve2=tracesdf[wellname2].values
                     curve3=tracesdf[wellname3].values
@@ -329,9 +338,14 @@ def getCatCarpet(combineddf,tracesdf,catcolumn,cat,extracolumn):
         return None,None,None
     else: 
         print('there are '+str(len(carpet))+' '+cat+' wells')
-        sortorder=np.argsort(extralist)
+        if(len(extracolumns)>1):
+            firstextra=[extralist[i][0] for i in range(len(extralist))]
+            sortorder=np.argsort(firstextra)
+            extralist=[extralist[sortorder[i]] for i in range(len(extralist))]
+        else:
+            sortorder=np.argsort(firstextra)
+            extralist=[extralist[sortorder[i]] for i in range(len(extralist))]
         #print(sortorder)
-        extralist=np.array(extralist)[sortorder]
         catwelllist=np.array(catwelllist)[sortorder]
         carpet=np.array(carpet)
         #reshape the carpet to make it easier to plot
@@ -666,7 +680,7 @@ def writeResults(dirname,fname,combineddf,results,mapname):
             sname=combineddf['Sample_Name'][idx]
             pname=combineddf['Plate_Name'][idx]
             idx2=wellnames384.index(well)
-            outdf.loc[len(outdf)]=[sname,'Inconclusive',mapdf['WellName_96'][idx2],link,pname]
+            outdf.loc[len(outdf)]=[sname,'Non-Negative',mapdf['WellName_96'][idx2],link,pname]
         else:
             print(well+' not found in list')
     for well in results[1]:
@@ -684,7 +698,7 @@ def writeResults(dirname,fname,combineddf,results,mapname):
             sname=combineddf['Sample_Name'][idx]
             pname=combineddf['Plate_Name'][idx]
             idx2=wellnames384.index(well)
-            outdf.loc[len(outdf)]=[sname,'Partial',mapdf['WellName_96'][idx2],link,pname]
+            outdf.loc[len(outdf)]=[sname,'Recommended',mapdf['WellName_96'][idx2],link,pname]
         else:
             print(well+' not found in list')
     for well in results[3]:
